@@ -1,0 +1,76 @@
+{
+        "version": 2,
+        "name": "My lovely gateway",
+        "port": {{ .service.port }},
+        "cache_ttl": "3600s",
+        "timeout": "3s",
+        "extra_config": {{ marshal .service.extra_config }},
+        "endpoints": [
+            {
+                "endpoint": "/v1/checkUsername/",
+                "querystring_params": [
+                        "username"
+                ],
+                  "method": "GET",
+                  "backend": [
+                                {
+                                          "url_pattern": "/api/v1/checkUsernameAvailable",
+                                          "method": "GET",
+                                          "host": [
+                                            "http://localhost:12090"
+                                          ]
+                                }
+                  ]
+            },
+            {
+                "endpoint": "/v1/updatePassword",
+                "method": "PATCH",
+                "output_encoding": "no-op",
+                "backend": [
+                            {
+                                    "url_pattern": "/api/v1/updatePassword",
+                                    "method": "PATCH",
+                                    "encoding": "no-op",
+                                    "host": [
+                                            "http://localhost:12090"
+                                    ]
+                            }
+                ],
+                "extra_config": {
+                        "github.com/devopsfaith/krakend-jose/validator": {
+                                "alg": "HS256",
+                                "jwk-url": "http://localhost:12010/jwks.json",
+                                "kid": "sim2",
+                                "disable_jwk_security": true
+                        }
+                }
+           },
+           {
+                    "endpoint": "/v1/authenticate",
+                    "method": "POST",
+                    "backend": [
+                            {
+                                    "url_pattern" : "/token-issuer",
+                                    "method": "POST",
+                                    "host": [
+                                            "http://localhost:12010"
+                                          ],
+                                    "extra_config": {
+                                            "github.com/devopsfaith/krakend/http": {
+                                                "return_error_details": "authentication"
+                                            }
+                                    }
+                            }
+                    ],
+                    "extra_config": {
+                            "github.com/devopsfaith/krakend-jose/signer": {
+                                    "alg": "HS256",
+                                    "kid": "sim2",
+                                    "keys-to-sign": ["access_token", "refresh_token"],
+                                    "jwk-url": "http://localhost:12010/jwks.json",
+                                    "disable_jwk_security": true
+                            }
+                    }
+            }
+        ]
+    }
